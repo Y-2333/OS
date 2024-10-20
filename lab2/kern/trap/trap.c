@@ -8,8 +8,10 @@
 #include <riscv.h>
 #include <stdio.h>
 #include <trap.h>
+#include <sbi.h>
 
 #define TICK_NUM 100
+static int num = 0;//new
 
 static void print_ticks() {
     cprintf("%d ticks\n", TICK_NUM);
@@ -21,6 +23,7 @@ static void print_ticks() {
 
 /* idt_init - initialize IDT to each of the entry points in kern/trap/vectors.S
  */
+
 void idt_init(void) {
     /* LAB1 YOUR CODE : STEP 2 */
     /* (1) Where are the entry addrs of each Interrupt Service Routine (ISR)?
@@ -125,11 +128,24 @@ void interrupt_handler(struct trapframe *tf) {
             // directly.
             // cprintf("Supervisor timer interrupt\n");
             // clear_csr(sip, SIP_STIP);
+            /*
             clock_set_next_event();
             if (++ticks % TICK_NUM == 0) {
                 print_ticks();
             }
             break;
+            */
+            //begin
+            clock_set_next_event();
+            if (++ticks % TICK_NUM == 0) {
+                print_ticks();
+                num++;
+            }
+            if(num==10){
+                sbi_shutdown();
+            }
+            break;
+            //end
         case IRQ_H_TIMER:
             cprintf("Hypervisor software interrupt\n");
             break;
@@ -161,8 +177,18 @@ void exception_handler(struct trapframe *tf) {
         case CAUSE_FAULT_FETCH:
             break;
         case CAUSE_ILLEGAL_INSTRUCTION:
+            //begin
+            cprintf("Exception type:Illegal instruction\n");
+            cprintf("Illegal instruction caught at 0x%08x\n", tf->epc);
+            tf->epc += 4;
+            //end
             break;
         case CAUSE_BREAKPOINT:
+            //begin
+            cprintf("Exception type:breakpoint\n");
+            cprintf("ebreak caught at 0x%08x\n", tf->epc);
+            tf->epc += 4;
+            //end
             break;
         case CAUSE_MISALIGNED_LOAD:
             break;
